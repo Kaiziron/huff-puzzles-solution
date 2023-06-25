@@ -15,15 +15,107 @@
  *  NOTICE: The contract should revert when an unrecognized function is called
  */
 
- #define function pushh(uint256 num) payable returns()
- #define function popp() payable returns()
- #define function read(uint256 index) payable returns(uint256)
- #define function length() payable returns(uint256)
- #define function write(uint256 index, uint256 num) payable returns()
+#define function pushh(uint256 num) payable returns()
+#define function popp() payable returns()
+#define function read(uint256 index) view returns(uint256)
+#define function length() view returns(uint256)
+#define function write(uint256 index, uint256 num) payable returns()
 
- #define error OutOfBounds()
- #define error ZeroArray()
+#define error OutOfBounds()
+#define error ZeroArray()
 
- #define macro MAIN() = takes(0) returns(0) {
+#define constant ARRAY_SLOT = FREE_STORAGE_POINTER()
+
+#define macro PUSHH() = takes(0) returns(0) {
+    [ARRAY_SLOT] sload // [array length]
+    // increment 1 to array length
+    dup1 0x01 add [ARRAY_SLOT] sstore // [array length]
+    [ARRAY_SLOT] 0x00 mstore // [array length]
+    0x20 0x00 sha3 // [hash] [array length]
+    add // [slot]
+    0x04 calldataload // [num] [slot]
+    swap1 sstore // []
+    stop
+}
+
+#define macro POPP() = takes(0) returns(0) {
+    [ARRAY_SLOT] sload // [array length]
+    // revert if length is zero
+    dup1 iszero zeroArrayErr jumpi // [array length]
     
- }
+    // decrement 1 to array length
+    dup1 0x01 swap1 sub dup1 [ARRAY_SLOT] sstore // [new array length] [array length]
+    [ARRAY_SLOT] 0x00 mstore // [new array length] [array length]
+    0x20 0x00 sha3 // [hash] [new array length] [array length]
+    add // [slot] [array length]
+    // clear the slot
+    0x00 swap1 sstore // [array length]
+    stop
+    
+    zeroArrayErr:
+        __ERROR(ZeroArray) 0x20 mstore
+        0x04 0x20 revert
+}
+
+#define macro READ() = takes(0) returns(0) {
+    0x04 calldataload // [index]
+    [ARRAY_SLOT] sload // [array length] [index]
+    // revert if index >= array length
+    dup2 lt iszero outOfBoundsErr jumpi // [index]
+    
+    [ARRAY_SLOT] 0x00 mstore // [index]
+    0x20 0x00 sha3 // [hash] [index]
+    add sload // [num]
+    0x40 mstore // []
+    0x20 0x40 return
+    
+    outOfBoundsErr:
+        __ERROR(OutOfBounds) 0x20 mstore
+        0x04 0x20 revert
+}
+
+#define macro LENGTH() = takes(0) returns(0) {
+    [ARRAY_SLOT] sload // [array length]
+    0x00 mstore // []
+    0x20 0x00 return
+}
+
+#define macro WRITE() = takes(0) returns(0) {
+    0x04 calldataload // [index]
+    [ARRAY_SLOT] sload // [array length] [index]
+    // revert if index >= array length
+    dup2 lt iszero outOfBoundsErr jumpi // [index]
+    
+    [ARRAY_SLOT] 0x00 mstore // [index]
+    0x20 0x00 sha3 // [hash] [index]
+    add // [slot]
+    0x24 calldataload // [num] [slot]
+    swap1 sstore // []
+    stop
+        
+    outOfBoundsErr:
+        __ERROR(OutOfBounds) 0x20 mstore
+        0x04 0x20 revert
+}
+
+#define macro MAIN() = takes(0) returns(0) {
+    0x00 calldataload 0xE0 shr                   // [selector]
+    dup1 __FUNC_SIG(pushh) eq pushh jumpi  // [selector]
+    dup1 __FUNC_SIG(popp) eq popp jumpi  // [selector]
+    dup1 __FUNC_SIG(read) eq read jumpi  // [selector]
+    dup1 __FUNC_SIG(length) eq length jumpi  // [selector]
+    dup1 __FUNC_SIG(write) eq write jumpi  // [selector]
+    
+    0x00 dup1 revert
+    
+    pushh:
+        PUSHH()
+    popp:
+        POPP()
+    read:
+        READ()
+    length:
+        LENGTH()
+    write:
+        WRITE()
+}

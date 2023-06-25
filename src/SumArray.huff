@@ -12,5 +12,34 @@
 
 
 #define macro MAIN() = takes(0) returns(0) {
-
+    0x00 calldataload 0xE0 shr                   // [selector]
+    dup1 __FUNC_SIG(sumArray) eq sumArray jumpi  // [selector]
+    
+    0x00 dup1 revert
+    
+    sumArray:
+        0x24 calldataload                        // [array length] [selector]
+        loop jump                                // [array length] [selector]
+        
+    // first 32 bytes in memory is loop counter (i), second 32 bytes in memory is the sum
+    loop:                                        // [array length] [selector]
+        0x00 mload                               // [i] [array length] [selector]
+        
+        // exit loop
+        dup2 dup2 eq end jumpi                   // [i] [array length] [selector]
+        
+        0x20 mul 0x44 add                        // [(i * 0x20) + 0x44] [array length] [selector]
+        calldataload                             // [array[i]] [array length] [selector]
+        
+        // add array[i] to sum 
+        0x20 mload add                           // [array[i] + sum] [array length] [selector]
+        0x20 mstore                              // [array length] [selector]
+        
+        // increment i
+        0x00 mload 0x01 add 0x00 mstore          // [array length] [selector]
+        
+        loop jump                                // [array length] [selector]
+        
+    end:
+        0x20 0x20 return
 }

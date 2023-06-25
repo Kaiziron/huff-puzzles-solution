@@ -10,9 +10,48 @@
  *  NOTICE: The contract should revert when an unrecognized function is called
  */
 
- #define function distribute(address[]) payable returns()
+#define function distribute(address[]) payable returns()
 
 
- #define macro MAIN() = takes(0) returns(0) {
-   
- }
+#define macro MAIN() = takes(0) returns(0) {
+    0x00 calldataload 0xE0 shr                       // [selector]
+    dup1 __FUNC_SIG(distribute) eq distribute jumpi  // [selector]
+    
+    0x00 dup1 revert
+    
+    distribute:
+        0x24 calldataload                            // [array length] [selector]
+
+        // revert if array is empty
+        dup1 0x00 eq fail jumpi                      // [array length] [selector]
+
+        // else start the loop
+        loop jump                                    // [array length] [selector]
+        
+    // first 32 bytes in memory is loop counter (i)
+    loop:                                        // [array length] [selector]
+        0x00 mload                               // [i] [array length] [selector]
+        
+        // exit loop
+        dup2 dup2 eq end jumpi                   // [i] [array length] [selector]
+        
+        0x20 mul 0x44 add                        // [(i * 0x20) + 0x44] [array length] [selector]
+        calldataload                             // [array[i]] [array length] [selector]
+        
+        // increment i
+        0x00 mload 0x01 add 0x00 mstore          // [array[i]] [array length] [selector]
+        
+        // send fund to address
+        dup2 callvalue div                       // [callvalue // array length] [array[i]] [array length] [selector]
+        0x00 dup1 dup1 dup1 dup5 dup7 gas call   // [callvalue // array length] [array[i]] [array length] [selector]
+        
+        // clear stack items for next iteration
+        pop pop pop                              // [array length] [selector]        
+        loop jump                                // [array length] [selector]
+            
+    end:
+        0x20 0x20 return
+
+    fail:
+        0x00 0x00 revert
+}

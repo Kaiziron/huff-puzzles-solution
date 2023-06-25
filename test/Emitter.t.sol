@@ -18,7 +18,7 @@ contract EmitterTest is Test, NonMatchingSelectorHelper {
     }
 
     function testEmitter() public {
-        vm.expectEmit(true, true, false, false);
+        vm.expectEmit(true, true, false, true);
         emit Value(42, 24);
         emitter.value(42, 24);
     }

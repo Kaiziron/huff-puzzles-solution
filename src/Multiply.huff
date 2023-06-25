@@ -13,5 +13,31 @@
 
 
 #define macro MAIN() = takes(0) returns(0) {
-
+    0x00 calldataload 0xE0 shr              // [selector]
+    dup1 __FUNC_SIG(multiply) eq multiply jumpi     // [selector]
+    
+    0x00 dup1 revert
+    
+    multiply:
+        0x04 calldataload                   // [num1] [selector]
+        dup1 0x00 eq zeroNum1 jumpi         // [num1] [selector]
+        dup1                                // [num1] [num1] [selector]
+        0x24 calldataload                   // [num2] [num1] [num1] [selector]
+        dup1 swap3                          // [num1] [num2] [num1] [num2] [selector]
+        mul                                 // [num1 * num2] [num1] [num2] [selector]
+        dup2 dup2                           // [num1 * num2] [num1] [num1 * num2] [num1] [num2] [selector]
+        div                                 // [(num1 * num2) / num1] [num1 * num2] [num1] [num2] [selector]
+        dup4 eq                             // [num2 == ((num1 * num2) / num1)] [num1 * num2] [num1] [num2] [selector]
+        
+        iszero overflow jumpi               // [num1 * num2] [num1] [num2] [selector]
+        
+        0x00 mstore                         // [num1 * num2] [num1] [num2] [selector]
+        msize 0x00 return                   // [num1 * num2] [num1] [num2] [selector]
+    
+    overflow:
+        0x00 dup1 revert
+    
+    zeroNum1:
+        0x00 dup1 mstore
+        msize 0x00 return
 }

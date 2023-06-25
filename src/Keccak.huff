@@ -9,5 +9,9 @@
 
 
  #define macro MAIN() = takes(0) returns(0) {
-    
+    // first 32 bytes in memory is for hash, and starting from 2nd 32 bytes its for the calldata
+    calldatasize 0x00 0x20 calldatacopy        // []
+    calldatasize 0x20 sha3                     // [hash]
+    0x00 mstore                                // []
+    0x20 0x00 return                           // []
  }

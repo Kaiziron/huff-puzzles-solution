@@ -8,5 +8,6 @@
  */
 
 #define macro MAIN() = takes(0) returns(0) {
-   
+   caller balance 0x00 mstore    // []
+   msize 0x00 return             // []
 }

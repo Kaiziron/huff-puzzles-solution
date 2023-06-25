@@ -13,5 +13,15 @@
 
 
  #define macro MAIN() = takes(0) returns(0) {
-    
+     0x00 calldataload 0xE0 shr                           // [selector]
+     dup1 __FUNC_SIG(makeContract) eq makeContract jumpi  // [selector]
+     
+     0x00 dup1 revert
+     
+     // first 32 bytes in memory are for address, and starting from second 32 bytes is the creation bytecode 
+     makeContract:
+         0x6a620caffe600052596000f3600052600b6015f3 0x20 mstore   // []
+         0x14 0x2c 0x00 create                                    // [address]
+         0x00 mstore                                              // []
+         0x20 0x00 return                                         // []
  }

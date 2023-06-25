@@ -16,5 +16,18 @@
 
 
 #define macro MAIN() = takes(0) returns(0) {
+    0x00 calldataload 0xE0 shr                // [selector]
+    dup1 __FUNC_SIG(store) eq store jumpi     // [selector]
+    dup1 __FUNC_SIG(read) eq read jumpi       // [selector]
     
+    0x00 dup1 revert
+    
+    store:
+        0x04 calldataload                     // [num]
+        0x00 sstore                           // []
+        stop                                  // []
+    read:
+        0x00 sload                            // [num in slot 0]
+        0x00 mstore                           // []
+        msize 0x00 return                     // []
 }
